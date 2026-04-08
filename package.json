@@ -1,0 +1,29 @@
+{
+    "name": "corner-bet-service",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Standalone job: Corner Bet game compact data fetch + REST push",
+    "main": "dist/entrada/index.js",
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/entrada/index.js",
+        "dev": "tsc && node dist/entrada/index.js"
+    },
+    "dependencies": {
+        "@sentry/node": "^8.40.0",
+        "axios": "^1.7.9",
+        "dotenv": "^16.4.5",
+        "node-cron": "^3.0.3",
+        "puppeteer": "^23.10.4",
+        "puppeteer-extra": "^3.3.6",
+        "puppeteer-extra-plugin-stealth": "^2.11.2"
+    },
+    "devDependencies": {
+        "@types/node": "^20",
+        "@types/node-cron": "^3.0.11",
+        "typescript": "^5"
+    },
+    "engines": {
+        "node": ">=18.0.0 <=22.x.x"
+    }
+}

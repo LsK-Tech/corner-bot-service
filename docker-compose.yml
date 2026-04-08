@@ -1,0 +1,19 @@
+services:
+  corner-bet:
+    build: .
+    image: corner-bet-service:local
+    container_name: corner-bet-service
+    env_file:
+      - .env
+    restart: unless-stopped
+    # Chromium/Puppeteer: default 64MB shm often causes tab crashes
+    shm_size: "2gb"
+    # Para chamar API na máquina host, use GAME_COMPACT_API_URL=http://host.docker.internal:<porta> no .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - corner-bet-net
+
+networks:
+  corner-bet-net:
+    driver: bridge
