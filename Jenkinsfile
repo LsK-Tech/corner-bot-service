@@ -55,24 +55,17 @@ pipeline {
                     sh '''
                         printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin
 
-                        docker stop corner-bot-service || true
-                        docker rm corner-bot-service || true
+                        envsubst < deploy/prod/docker-stack.yml > /tmp/corner-bot-stack.yml
 
-                        docker run -d \
-                            --name corner-bot-service \
-                            --restart unless-stopped \
-                            --shm-size="2gb" \
-                            --add-host=host.docker.internal:host-gateway \
-                            --network mansao-green-prod_web-net \
-                            -e CORNER_BET_USERNAME="$CORNER_BET_USERNAME" \
-                            -e CORNER_BET_PASSWORD="$CORNER_BET_PASSWORD" \
-                            -e GAME_COMPACT_API_URL="$GAME_COMPACT_API_URL" \
-                            -e GAME_COMPACT_API_TOKEN="$GAME_COMPACT_API_TOKEN" \
-                            -e SENTRY_DSN="$SENTRY_DSN" \
-                            -e TZ="$TZ" \
-                            ghcr.io/lsk-tech/corner-bot-service:latest
+                        docker stack deploy \
+                            --compose-file /tmp/corner-bot-stack.yml \
+                            --with-registry-auth \
+                            corner-bot
                     '''
                 }
+            }
+            post {
+                always { sh 'rm -f /tmp/corner-bot-stack.yml || true' }
             }
         }
     }

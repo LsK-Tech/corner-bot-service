@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   corner-bet:
-    image: ghcr.io/lsk-tech/corner-bot-service:${IMAGE_TAG}
+    image: ghcr.io/lsk-tech/corner-bot-service:latest
     environment:
       - CORNER_BET_USERNAME=${CORNER_BET_USERNAME}
       - CORNER_BET_PASSWORD=${CORNER_BET_PASSWORD}
