@@ -55,7 +55,7 @@ pipeline {
                     sh '''
                         printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin
 
-                        envsubst < deploy/prod/docker-stack.yml > /tmp/corner-bot-stack.yml
+                        envsubst < docker-stack.yml > /tmp/corner-bot-stack.yml
 
                         docker stack deploy \
                             --compose-file /tmp/corner-bot-stack.yml \
