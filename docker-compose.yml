@@ -1,19 +1,30 @@
+version: "3.8"
+
 services:
   corner-bet:
-    build: .
-    image: corner-bet-service:local
-    container_name: corner-bet-service
-    env_file:
-      - .env
-    restart: unless-stopped
-    # Chromium/Puppeteer: default 64MB shm often causes tab crashes
+    image: ghcr.io/lsk-tech/corner-bot-service:${IMAGE_TAG}
+    environment:
+      - CORNER_BET_USERNAME=${CORNER_BET_USERNAME}
+      - CORNER_BET_PASSWORD=${CORNER_BET_PASSWORD}
+      - GAME_COMPACT_API_URL=${GAME_COMPACT_API_URL}
+      - GAME_COMPACT_API_TOKEN=${GAME_COMPACT_API_TOKEN}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - TZ=${TZ}
     shm_size: "2gb"
-    # Para chamar API na máquina host, use GAME_COMPACT_API_URL=http://host.docker.internal:<porta> no .env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - corner-bet-net
+      - mansao-green-prod-net
+      - appapi-prod-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
 networks:
-  corner-bet-net:
-    driver: bridge
+  mansao-green-prod-net:
+    external: true
+    name: mansao-green-prod_web-net
+  appapi-prod-net:
+    external: true
+    name: appapi_appapi-prod-net
