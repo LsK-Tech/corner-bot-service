@@ -40,20 +40,23 @@ pipeline {
         stage('Deploy') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'corner-bet-username',   secretVariable: 'CORNER_BET_USERNAME'),
-                    string(credentialsId: 'corner-bet-password',   secretVariable: 'CORNER_BET_PASSWORD'),
-                    string(credentialsId: 'corner-bet-api-url',    secretVariable: 'GAME_COMPACT_API_URL'),
-                    string(credentialsId: 'corner-bet-api-token',  secretVariable: 'GAME_COMPACT_API_TOKEN'),
-                    string(credentialsId: 'corner-bet-sentry-dsn', secretVariable: 'SENTRY_DSN'),
-                    string(credentialsId: 'corner-bet-tz',         secretVariable: 'TZ')
+                    string(credentialsId: 'corner-bet-username',   variable: 'CORNER_BET_USERNAME'),
+                    string(credentialsId: 'corner-bet-password',   variable: 'CORNER_BET_PASSWORD'),
+                    string(credentialsId: 'corner-bet-api-url',    variable: 'GAME_COMPACT_API_URL'),
+                    string(credentialsId: 'corner-bet-api-token',  variable: 'GAME_COMPACT_API_TOKEN'),
+                    string(credentialsId: 'corner-bet-sentry-dsn', variable: 'SENTRY_DSN'),
+                    string(credentialsId: 'corner-bet-tz',         variable: 'TZ'),
+                    usernamePassword(
+                        credentialsId: 'mg-docker-registry',
+                        usernameVariable: 'REGISTRY_USER',
+                        passwordVariable: 'REGISTRY_PASSWORD'
+                    )
                 ]) {
                     sh '''
-                        IMAGE_TAG=$(echo $GIT_COMMIT | cut -c1-7)
+                        printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin
 
                         docker stop corner-bot-service || true
                         docker rm corner-bot-service || true
-
-                        printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin || true
 
                         docker run -d \
                             --name corner-bot-service \
