@@ -1,33 +1,37 @@
 pipeline {
+
     agent { label 'App-Mansão-Green' }
 
-    environment {
-        REGISTRY    = 'ghcr.io/lsk-tech'
-        IMAGE_NAME  = 'corner-bot-service'
-        STACK_NAME  = 'corner-bot'
-        DEPLOY_FILE = 'deploy/prod/docker-stack.yml'
-        VPS_HOST    = '62.171.139.118'
-        VPS_USER    = 'root'
+    options {
+        disableConcurrentBuilds()
+        timestamps()
     }
 
     stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Build & Push') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'ghcr-credentials',
-                    usernameVariable: 'GHCR_USER',
-                    passwordVariable: 'GHCR_TOKEN'
+                    credentialsId: 'mg-docker-registry',
+                    usernameVariable: 'REGISTRY_USER',
+                    passwordVariable: 'REGISTRY_PASSWORD'
                 )]) {
                     sh '''
-                        echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+                        printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin
 
                         IMAGE_TAG=${GIT_COMMIT:0:7}
 
-                        docker build -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
-                        docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+                        docker build -t ghcr.io/lsk-tech/corner-bot-service:$IMAGE_TAG .
+                        docker push ghcr.io/lsk-tech/corner-bot-service:$IMAGE_TAG
 
-                        docker tag $REGISTRY/$IMAGE_NAME:$IMAGE_TAG $REGISTRY/$IMAGE_NAME:latest
-                        docker push $REGISTRY/$IMAGE_NAME:latest
+                        docker tag ghcr.io/lsk-tech/corner-bot-service:$IMAGE_TAG ghcr.io/lsk-tech/corner-bot-service:latest
+                        docker push ghcr.io/lsk-tech/corner-bot-service:latest
                     '''
                 }
             }
@@ -36,10 +40,6 @@ pipeline {
         stage('Deploy') {
             steps {
                 withCredentials([
-                    sshUserPrivateKey(
-                        credentialsId: 'vps-62-ssh',
-                        keyFileVariable: 'SSH_KEY'
-                    ),
                     string(credentialsId: 'corner-bet-username',   secretVariable: 'CORNER_BET_USERNAME'),
                     string(credentialsId: 'corner-bet-password',   secretVariable: 'CORNER_BET_PASSWORD'),
                     string(credentialsId: 'corner-bet-api-url',    secretVariable: 'GAME_COMPACT_API_URL'),
@@ -50,14 +50,24 @@ pipeline {
                     sh '''
                         IMAGE_TAG=${GIT_COMMIT:0:7}
 
-                        envsubst < $DEPLOY_FILE > /tmp/corner-bot-stack.yml
+                        docker stop corner-bot-service || true
+                        docker rm corner-bot-service || true
 
-                        scp -i $SSH_KEY -o StrictHostKeyChecking=no \
-                            /tmp/corner-bot-stack.yml \
-                            $VPS_USER@$VPS_HOST:/tmp/corner-bot-stack.yml
+                        printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin || true
 
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST \
-                            "docker stack deploy -c /tmp/corner-bot-stack.yml $STACK_NAME --with-registry-auth"
+                        docker run -d \
+                            --name corner-bot-service \
+                            --restart unless-stopped \
+                            --shm-size="2gb" \
+                            --add-host=host.docker.internal:host-gateway \
+                            --network mansao-green-prod_web-net \
+                            -e CORNER_BET_USERNAME="$CORNER_BET_USERNAME" \
+                            -e CORNER_BET_PASSWORD="$CORNER_BET_PASSWORD" \
+                            -e GAME_COMPACT_API_URL="$GAME_COMPACT_API_URL" \
+                            -e GAME_COMPACT_API_TOKEN="$GAME_COMPACT_API_TOKEN" \
+                            -e SENTRY_DSN="$SENTRY_DSN" \
+                            -e TZ="$TZ" \
+                            ghcr.io/lsk-tech/corner-bot-service:latest
                     '''
                 }
             }
@@ -67,6 +77,7 @@ pipeline {
     post {
         always {
             sh 'docker logout ghcr.io || true'
+            cleanWs()
         }
     }
 }
