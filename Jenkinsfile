@@ -25,7 +25,7 @@ pipeline {
                     sh '''
                         printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin
 
-                        IMAGE_TAG=${GIT_COMMIT:0:7}
+                        IMAGE_TAG=$(echo $GIT_COMMIT | cut -c1-7)
 
                         docker build -t ghcr.io/lsk-tech/corner-bot-service:$IMAGE_TAG .
                         docker push ghcr.io/lsk-tech/corner-bot-service:$IMAGE_TAG
@@ -48,7 +48,7 @@ pipeline {
                     string(credentialsId: 'corner-bet-tz',         secretVariable: 'TZ')
                 ]) {
                     sh '''
-                        IMAGE_TAG=${GIT_COMMIT:0:7}
+                        IMAGE_TAG=$(echo $GIT_COMMIT | cut -c1-7)
 
                         docker stop corner-bot-service || true
                         docker rm corner-bot-service || true
