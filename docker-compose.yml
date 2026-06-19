@@ -1,8 +1,7 @@
 version: "3.8"
-
 services:
   corner-bet:
-    image: ghcr.io/lsk-tech/corner-bot-service:latest
+    image: ghcr.io/lsk-tech/corner-bot-service:${IMAGE_TAG}
     environment:
       - CORNER_BET_USERNAME=${CORNER_BET_USERNAME}
       - CORNER_BET_PASSWORD=${CORNER_BET_PASSWORD}
@@ -14,17 +13,15 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - mansao-green-prod-net
-      - appapi-prod-net
+      - mansao-green-net
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
+      update_config:
+        order: stop-first
 
 networks:
-  mansao-green-prod-net:
+  mansao-green-net:
     external: true
-    name: mansao-green-prod_web-net
-  appapi-prod-net:
-    external: true
-    name: appapi_appapi-prod-net
+    name: ${NETWORK_NAME}
